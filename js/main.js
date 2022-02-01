@@ -3,8 +3,6 @@ class StartScreen extends Phaser.Scene {
         super({key: 'StartScreen'});
     }
 
-    cursor = null;
-
     preload() {
         this.load.image('st-header', 'assets/header.png');
         this.load.image('st-p1', 'assets/player_front1.png');
@@ -37,11 +35,21 @@ class StartScreen extends Phaser.Scene {
             .setDisplaySize(c_cat_width*2, c_cat_height*2)
             .setOrigin(0,0);
         
-        this.cursor = this.input.keyboard.createCursorKeys();
+        this.spaceKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+        this.QKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.Q);
     }
 
     update() {
-        // need to handle mouse input
+        if (this.spaceKey.isDown) {
+            game.scene.start('GameBody');
+            game.scene.sleep('StartScreen');
+        }
+        else if (this.QKey.isDown) {
+            if (confirm('Leave the game?')) {
+                window.opener = null;
+                window.close();
+            }
+        }
     }
 };
 
@@ -92,7 +100,7 @@ const config = {
             debug: false
         }
     },
-    scene: [StartScreen]
+    scene: [StartScreen, GameBody]
 };
 
 const game = new Phaser.Game(config);
