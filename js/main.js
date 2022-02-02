@@ -62,7 +62,7 @@ class GameBody extends Phaser.Scene {
 
     init() {
         this.gameOver = false;
-        this.x = c_redline_left - 10;
+        this.x = c_redline_left - c_player_width - 10;
         this.y = c_height / 2;
     }
 
@@ -73,18 +73,28 @@ class GameBody extends Phaser.Scene {
         this.load.image('st-good', 'assets/student_good1.png');
         this.load.image('st-bad', 'assets/student_bad1.png');
         this.load.image('magic', 'assets/magic.png');
+
+        this.load.audio('bgm', 'assets/bgm/Alla-Turca.mp3');
     }
 
     create() {
         this.init();
 
-        this.player = this.physics.add.sprite(this.x, this.y, 'player').setInteractive();
-        this.player.setCollideWorldBounds(true);
-        this.player.body.setGravityY(0);
-
         this.add.image(0,0,'background')
             .setDisplaySize(c_width, c_height)
             .setOrigin(0,0);
+
+        this.bgm = this.sound.add('bgm', {loop: true});
+        this.bgm.play();
+
+        this.player = this.physics.add.sprite(this.x, this.y, 'player').setOrigin(0,0.5);
+        this.player.setDisplaySize(c_player_width, c_player_height);
+        this.player.setCollideWorldBounds(true);
+        this.player.body.setGravityY(0);
+
+        this.input.on('pointermove', pointer => {
+            this.player.y = pointer.y;
+        });
     }
 };
 
