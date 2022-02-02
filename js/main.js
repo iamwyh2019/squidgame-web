@@ -68,7 +68,7 @@ class GameBody extends Phaser.Scene {
 
     preload() {
         this.load.image('player', 'assets/player.png');
-        this.load.image('background', 'assets/background.png');
+        this.load.image('background', 'assets/bg1_darken.png');
         this.load.image('cat', 'assets/cat.png');
         this.load.image('st-good', 'assets/student_good1.png');
         this.load.image('st-bad', 'assets/student_bad1.png');
@@ -93,9 +93,30 @@ class GameBody extends Phaser.Scene {
         this.player.setCollideWorldBounds(true);
         this.player.body.setGravityY(0);
 
+        this.bullets = this.physics.add.group();
+
         this.input.on('pointermove', pointer => {
             this.player.y = pointer.y;
         });
+
+        this.input.on('pointerdown', () => this.addBullet());
+    }
+
+    update() {
+        this.bullets.getChildren().forEach(bullet => {
+            if (bullet.active && bullet.x > c_width + c_magic_width) {
+                this.bullets.killAndHide(bullet);
+            }
+        });
+    }
+
+    addBullet() {
+        const bullet = this.bullets.get(this.x, this.player.y + c_player_height/5, 'magic');
+        bullet.setVelocity(500,0);
+        bullet.setSize(c_magic_width, c_magic_height);
+        bullet.setDisplaySize(c_magic_width, c_magic_height);
+        bullet.setActive(true);
+        bullet.setVisible(true);
     }
 };
 
