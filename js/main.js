@@ -76,6 +76,7 @@ class GameBody extends Phaser.Scene {
 
         this.load.audio('bgm', 'assets/bgm/Alla-Turca.mp3');
         this.load.audio('meow', 'assets/bgm/meow.mp3');
+        this.load.audio('biu', 'assets/bgm/biu.mp3');
     }
 
     create() {
@@ -87,6 +88,8 @@ class GameBody extends Phaser.Scene {
 
         this.bgm = this.sound.add('bgm', {loop: true});
         this.bgm.play();
+
+        this.biu = this.sound.add('biu', {loop: false, volume: 0.25});
 
         this.player = this.physics.add.sprite(this.x, this.y, 'player').setOrigin(1,0.5);
         this.player.setDisplaySize(c_player_width, c_player_height);
@@ -129,6 +132,9 @@ class GameBody extends Phaser.Scene {
         // This might be a recollected magic, so re-activate it
         magic.setActive(true);
         magic.setVisible(true);
+
+        // Sound effect
+        this.biu.play();
     }
 };
 
