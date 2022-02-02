@@ -93,30 +93,42 @@ class GameBody extends Phaser.Scene {
         this.player.setCollideWorldBounds(true);
         this.player.body.setGravityY(0);
 
-        this.bullets = this.physics.add.group();
+        // The resource group for magic
+        this.allMagic = this.physics.add.group();
 
+        // Use mouse movement to control the player
         this.input.on('pointermove', pointer => {
             this.player.y = pointer.y;
         });
 
-        this.input.on('pointerdown', () => this.addBullet());
+        // Cannot use "('pointerdown', this.addBullet)" since the 'this' context is different
+        this.input.on('pointerdown', () => this.addMagic());
     }
 
     update() {
-        this.bullets.getChildren().forEach(bullet => {
-            if (bullet.active && bullet.x > c_width + c_magic_width) {
-                this.bullets.killAndHide(bullet);
+        // Check if bullets goes out of the screen
+        this.allMagic.getChildren().forEach(magic => {
+            if (magic.active && magic.x > c_width + c_magic_width) {
+                // This will not remove the magic instance
+                // Just set the bullet inactive and invisible
+                // So it can be reused for next call
+                this.allMagic.killAndHide(magic);
             }
         });
     }
 
-    addBullet() {
-        const bullet = this.bullets.get(this.x, this.player.y + c_player_height/5, 'magic');
-        bullet.setVelocity(500,0);
-        bullet.setSize(c_magic_width, c_magic_height);
-        bullet.setDisplaySize(c_magic_width, c_magic_height);
-        bullet.setActive(true);
-        bullet.setVisible(true);
+    addMagic() {
+        // the y-axis of the bullet. It goes right from the gun
+        const magic_y = this.player.y + c_player_height*0.2695;
+
+        const magic = this.allMagic.get(this.x, magic_y, 'magic');
+        magic.setVelocity(500,0);
+        magic.setSize(c_magic_width, c_magic_height);
+        magic.setDisplaySize(c_magic_width, c_magic_height);
+
+        // This might be a recollected magic, so re-activate it
+        magic.setActive(true);
+        magic.setVisible(true);
     }
 };
 
