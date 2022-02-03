@@ -53,3 +53,6 @@ const c_student_prob = 0.5
 const c_student_time = 3
 // student moving speed, calculated from the time
 const c_student_speed = (c_width - c_redline_left) / c_student_time
+
+// # of seconds for an "hour"
+const c_hour_length = 5
