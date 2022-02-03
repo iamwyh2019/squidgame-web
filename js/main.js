@@ -1,6 +1,6 @@
-class StartScreen extends Phaser.Scene {
+class GameStart extends Phaser.Scene {
     constructor() {
-        super({key: 'StartScreen'});
+        super({key: 'GameStart'});
     }
 
     preload() {
@@ -41,8 +41,7 @@ class StartScreen extends Phaser.Scene {
 
     update() {
         if (this.spaceKey.isDown) {
-            game.scene.start('GameBody');
-            game.scene.sleep('StartScreen');
+            this.scene.start('GameBody');
         }
         else if (this.QKey.isDown) {
             if (confirm('Leave the game?')) {
@@ -61,9 +60,9 @@ class GameBody extends Phaser.Scene {
     cursor = null;
 
     init() {
-        this.gameOver = false;
         this.x = c_redline_left - 10;
         this.y = c_height / 2;
+        this.score = 0;
     }
 
     preload() {
@@ -100,7 +99,8 @@ class GameBody extends Phaser.Scene {
         this.allMagic = this.physics.add.group();
 
         // The resource group for students
-        this.allStudent = this.physics.add.group();
+        this.allGoodStudent = this.physics.add.group();
+        this.allBadStudent = this.physics.add.group();
 
         // Use mouse movement to control the player
         this.input.on('pointermove', pointer => {
@@ -115,9 +115,13 @@ class GameBody extends Phaser.Scene {
             delay: 1500,
             loop: true,
             callback: () => {
-                this.addStudent();
+                const good = Math.random() > c_student_prob;
+                this.addStudent(good);
             }
         });
+
+        this.physics.add.overlap(this.allMagic, this.allGoodStudent, this.handleGoodHit, null, this);
+        this.physics.add.overlap(this.allMagic, this.allBadStudent, this.handleBadHit, null, this);
     }
 
     update() {
@@ -130,9 +134,16 @@ class GameBody extends Phaser.Scene {
                 this.allMagic.killAndHide(magic);
             }
         });
-        this.allStudent.getChildren().forEach(student => {
+        this.allGoodStudent.getChildren().forEach(student => {
             if (student.active && student.x < c_redline_left - c_student_width) {
-                this.allStudent.killAndHide(student);
+                this.allGoodStudent.killAndHide(student);
+            }
+        });
+        this.allBadStudent.getChildren().forEach(student => {
+            // This student escaped
+            if (student.active && student.x < c_redline_left - c_student_width) {
+                this.bgm.stop();
+                this.scene.start('GameEnd-Miss');
             }
         });
     }
@@ -143,8 +154,9 @@ class GameBody extends Phaser.Scene {
 
         const magic = this.allMagic.get(this.x, magic_y, 'magic');
         magic.setVelocity(c_magic_speed,0);
-        magic.setSize(c_magic_width, c_magic_height);
+        magic.body.setSize(c_magic_width, c_magic_height);
         magic.setDisplaySize(c_magic_width, c_magic_height);
+        magic.body.syncBounds = true;
 
         // This might be a recollected magic, so re-activate it
         magic.setActive(true);
@@ -154,21 +166,89 @@ class GameBody extends Phaser.Scene {
         this.biu.play();
     }
 
-    addStudent() {
-        const stu_y = Math.random() * (c_height - c_student_height);
-        const stu_bad = (Math.random() < c_student_prob);
-        const asset_name = stu_bad? 'st-bad': 'st-good';
+    addStudent(good) {
+        const stu_x = c_width + c_student_width/2;
+        const stu_y = Math.random() * (c_height - c_student_height) + c_student_height/2;
+
+        let student;
+        if (good) student = this.allGoodStudent.get(stu_x, stu_y, 'st-good');
+        else student = this.allBadStudent.get(stu_x, stu_y, 'st-bad');
         
-        let student = this.allStudent.get(c_width, stu_y, asset_name);
-        student.bad = stu_bad;
         student.setDisplaySize(c_student_width, c_student_height);
-        student.setSize(c_student_width, c_student_height);
-        student.setOrigin(0,0);
+        student.body.syncBounds = true;
 
         student.setActive(true);
         student.setVisible(true);
 
         student.setVelocity(-c_student_speed,0);
+    }
+
+    // You hit a good student!
+    handleGoodHit(magic, student) {
+        if (magic.active && student.active) {
+            this.bgm.stop();
+            this.scene.start('GameEnd-Wrong');
+        }
+    }
+
+    // You hit a bad student.
+    handleBadHit(magic, student) {
+        if (magic.active && student.active) {
+            this.score++;
+            this.allMagic.killAndHide(magic);
+            this.allBadStudent.killAndHide(student);
+        }
+    }
+};
+
+// The base class for end scene
+// Will not load resources, just handle keyboard event
+class GameEndBase extends Phaser.Scene {
+    constructor(scenename) {
+        super({key: scenename});
+    }
+
+    create() {
+        this.add.image(0,0,'endbg').setOrigin(0,0).setDisplaySize(c_width, c_height);
+        this.bgm = this.sound.add('endbgm', {loop: true});
+        this.bgm.play();
+        this.spaceKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+        this.QKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.Q);
+    }
+
+    update() {
+        if (this.spaceKey.isDown) {
+            this.bgm.stop();
+            this.scene.start('GameStart');
+        }
+        else if (this.QKey.isDown) {
+            if (confirm('Leave the game?')) {
+                window.opener = null;
+                window.close();
+            }
+        }
+    }
+};
+
+class GameEnd_Wrong extends GameEndBase {
+    constructor() {
+        super('GameEnd-Wrong');
+    }
+
+    preload() {
+        this.load.image('endbg', 'assets/endpg1.png');
+        this.load.audio('endbgm', 'assets/bgm/start_again.mp3');
+    }
+};
+
+class GameEnd_Miss extends GameEndBase {
+    constructor() {
+        super('GameEnd-Miss');
+    }
+
+    preload() {
+        this.load.image('endbg', 'assets/endpg.png');
+        this.load.audio('endbgm', 'assets/bgm/start_again.mp3');
     }
 };
 
@@ -184,7 +264,7 @@ const config = {
             debug: false
         }
     },
-    scene: [StartScreen, GameBody]
+    scene: [GameStart, GameBody, GameEnd_Wrong, GameEnd_Miss]
 };
 
 const game = new Phaser.Game(config);
