@@ -99,6 +99,9 @@ class GameBody extends Phaser.Scene {
         // The resource group for magic
         this.allMagic = this.physics.add.group();
 
+        // The resource group for students
+        this.allStudent = this.physics.add.group();
+
         // Use mouse movement to control the player
         this.input.on('pointermove', pointer => {
             this.player.y = pointer.y;
@@ -106,6 +109,15 @@ class GameBody extends Phaser.Scene {
 
         // Cannot use "('pointerdown', this.addBullet)" since the 'this' context is different
         this.input.on('pointerdown', () => this.addMagic());
+
+        // The timer for adding students
+        this.stuTimer = this.time.addEvent({
+            delay: 1500,
+            loop: true,
+            callback: () => {
+                this.addStudent();
+            }
+        });
     }
 
     update() {
@@ -118,6 +130,11 @@ class GameBody extends Phaser.Scene {
                 this.allMagic.killAndHide(magic);
             }
         });
+        this.allStudent.getChildren().forEach(student => {
+            if (student.active && student.x < c_redline_left - c_student_width) {
+                this.allStudent.killAndHide(student);
+            }
+        });
     }
 
     addMagic() {
@@ -125,7 +142,7 @@ class GameBody extends Phaser.Scene {
         const magic_y = this.player.y + c_player_height*0.2695;
 
         const magic = this.allMagic.get(this.x, magic_y, 'magic');
-        magic.setVelocity(500,0);
+        magic.setVelocity(c_magic_speed,0);
         magic.setSize(c_magic_width, c_magic_height);
         magic.setDisplaySize(c_magic_width, c_magic_height);
 
@@ -135,6 +152,23 @@ class GameBody extends Phaser.Scene {
 
         // Sound effect
         this.biu.play();
+    }
+
+    addStudent() {
+        const stu_y = Math.random() * (c_height - c_student_height);
+        const stu_bad = (Math.random() < c_student_prob);
+        const asset_name = stu_bad? 'st-bad': 'st-good';
+        
+        let student = this.allStudent.get(c_width, stu_y, asset_name);
+        student.bad = stu_bad;
+        student.setDisplaySize(c_student_width, c_student_height);
+        student.setSize(c_student_width, c_student_height);
+        student.setOrigin(0,0);
+
+        student.setActive(true);
+        student.setVisible(true);
+
+        student.setVelocity(-c_student_speed,0);
     }
 };
 
