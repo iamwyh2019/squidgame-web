@@ -89,6 +89,7 @@ class GameBody extends Phaser.Scene {
         this.bgm.play();
 
         this.biu = this.sound.add('biu', {loop: false, volume: 0.25});
+        this.meow = this.sound.add('meow', {loop: false});
 
         this.player = this.physics.add.sprite(this.x, this.y, 'player').setOrigin(1,0.5);
         this.player.setDisplaySize(c_player_width, c_player_height);
@@ -101,6 +102,9 @@ class GameBody extends Phaser.Scene {
         // The resource group for students
         this.allGoodStudent = this.physics.add.group();
         this.allBadStudent = this.physics.add.group();
+
+        // The resource group for cats
+        this.allCat = this.physics.add.group();
 
         // Use mouse movement to control the player
         this.input.on('pointermove', pointer => {
@@ -135,7 +139,7 @@ class GameBody extends Phaser.Scene {
             }
         });
         this.allGoodStudent.getChildren().forEach(student => {
-            if (student.active && student.x < c_redline_left - c_student_width) {
+            if (student.active && student.x < c_redline_left - c_student_width/2) {
                 this.allGoodStudent.killAndHide(student);
             }
         });
@@ -143,7 +147,18 @@ class GameBody extends Phaser.Scene {
             // This student escaped
             if (student.active && student.x < c_redline_left - c_student_width) {
                 this.bgm.stop();
-                this.scene.start('GameEnd-Miss');
+                this.scene.start('GameEnd-Wrong');
+            }
+        });
+        this.allCat.getChildren().forEach(cat => {
+            if (cat.active) {
+                const timepass = (Date.now() - cat.st_time)/1000;
+                if (timepass > c_cat_die_time) {
+                    this.allCat.killAndHide(cat);
+                }
+                else {
+                    cat.alpha = 1 - timepass/c_cat_die_time;
+                }
             }
         });
     }
@@ -195,6 +210,17 @@ class GameBody extends Phaser.Scene {
     handleBadHit(magic, student) {
         if (magic.active && student.active) {
             this.score++;
+
+            const stu_x = student.x, stu_y = student.y;
+            const cat = this.allCat.get(stu_x, stu_y, 'cat');
+            cat.setActive(true);
+            cat.setVisible(true);
+            cat.alpha = 1;
+            cat.st_time = Date.now();
+            cat.setDisplaySize(c_cat_width, c_cat_height);
+            cat.setVelocity(0, -c_cat_die_dist/c_cat_die_time);
+            this.meow.play();
+
             this.allMagic.killAndHide(magic);
             this.allBadStudent.killAndHide(student);
         }
