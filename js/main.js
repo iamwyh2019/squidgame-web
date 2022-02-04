@@ -76,6 +76,12 @@ class GameBody extends Phaser.Scene {
         this.load.audio('bgm', 'assets/bgm/Alla-Turca.mp3');
         this.load.audio('meow', 'assets/bgm/meow.mp3');
         this.load.audio('biu', 'assets/bgm/biu.mp3');
+
+        // banners
+        this.load.image('banner-10', 'assets/10.png');
+        this.load.image('banner-3', 'assets/3.png');
+        this.load.image('banner-new', 'assets/newday.png');
+        this.load.image('night', 'assets/night.png');
     }
 
     create() {
@@ -84,6 +90,12 @@ class GameBody extends Phaser.Scene {
         this.add.image(0,0,'background')
             .setDisplaySize(c_width, c_height)
             .setOrigin(0,0);
+        
+        this.night = this.add.image(0,0,'night')
+            .setDisplaySize(c_width, c_height)
+            .setOrigin(0,0);
+        this.night.depth = 5; // to have it on the top
+        this.night.alpha = 0;
 
         this.bgm = this.sound.add('bgm', {loop: true});
         this.bgm.play();
@@ -95,6 +107,13 @@ class GameBody extends Phaser.Scene {
         this.player.setDisplaySize(c_player_width, c_player_height);
         this.player.setCollideWorldBounds(true);
         this.player.body.setGravityY(0);
+
+        this.banner_10 = this.physics.add.sprite(0, c_height/2, 'banner-10').setOrigin(1,0.5);
+        this.banner_10.setDisplaySize(c_banner_width, c_banner_height);
+        this.banner_3 = this.physics.add.sprite(0, c_height/2, 'banner-3').setOrigin(1,0.5);
+        this.banner_3.setDisplaySize(c_banner_width, c_banner_height);
+        this.banner_new = this.physics.add.sprite(0, c_height/2, 'banner-new').setOrigin(1,0.5);
+        this.banner_new.setDisplaySize(c_banner_width, c_banner_height);
 
         // The resource group for magic
         this.allMagic = this.physics.add.group();
@@ -129,16 +148,36 @@ class GameBody extends Phaser.Scene {
 
         // The timer for adding students
         this.stuTimer = this.time.addEvent({
-            delay: 1500,
+            delay: c_time_between,
             loop: true,
             callback: () => {
                 const good = Math.random() > c_student_prob;
                 this.addStudent(good);
-            }
+            },
+            paused: false
         });
 
+        // For huge wave
+        this.stuFastTimer = this.time.addEvent({
+            delay: c_time_between/3,
+            loop: true,
+            callback: () => {
+                const good = Math.random() > c_student_prob;
+                this.addStudent(good);
+            },
+            paused: true
+        });
+
+        // Check magic hit
         this.physics.add.overlap(this.allMagic, this.allGoodStudent, this.handleGoodHit, null, this);
         this.physics.add.overlap(this.allMagic, this.allBadStudent, this.handleBadHit, null, this);
+
+        // handle animation
+        this.animationOn = false;
+        this.animationWork = null;
+        this.animationCallback = null;
+        this.animationTime = Date.now();
+        this.animationLen = 0;
     }
 
     update() {
@@ -180,12 +219,86 @@ class GameBody extends Phaser.Scene {
             this.nowTime++;
             if (this.nowTime > 12)
                 this.nowTime -= 12;
-            if (this.nowTime == 7) {
-                this.nowDay++;
-                this.nowTime = 9;
-            }
             this.timeText.setText(this.getTimeText());
             this.lastTime = now_time;
+
+            if (this.nowTime == 7) {
+                this.stuTimer.paused = true;
+                this.lastTime = Date.now() + (c_student_time+c_night_time+c_banner_time)*1000;
+                
+                this.time.addEvent({
+                    delay: c_student_time*1000,
+                    callback: () => {
+                        this.animationOn = true;
+                        this.animationTime = Date.now();
+                        this.animationLen = c_night_time;
+                        this.animationWork = (elapsed) => {
+                            if (elapsed < c_night_dim_time)
+                                this.night.alpha = elapsed / c_night_dim_time;
+                            else if (elapsed > c_night_stay_time + c_night_dim_time)
+                                this.night.alpha = 1 - 
+                                    (elapsed-c_night_stay_time-c_night_dim_time)/c_night_dim_time;
+                            else this.night.alpha = 1;
+                        }
+                        this.animationCallback = () => {
+                            this.animationOn = true;
+                            this.animationTime = Date.now();
+                            this.animationLen = c_banner_time;
+                            this.animationWork = null;
+                            this.addBannerAnimation(this.banner_new);
+
+                            this.nowDay++;
+                            this.nowTime = 9;
+                            this.timeText.setText(this.getTimeText());
+                            
+                            this.animationCallback = () => {
+                                this.stuTimer.paused = false;
+                                this.lastTime = Date.now() + c_time_between;
+                                this.animationCallback = null;
+                            }
+                        }
+                    }
+                })
+            }
+
+            if (this.nowTime === 10 || this.nowTime === 3) {
+                // first, stop the normal student timer
+                // second, wait till all students have gone
+                this.stuTimer.paused = true;
+                this.lastTime = Date.now() + (c_student_time+c_banner_time)*1000;
+
+                const banner = (this.nowTime === 10? this.banner_10: this.banner_3);
+                this.addBannerAnimation(banner);
+
+                this.animationCallback = () => {
+                    this.stuFastTimer.paused = false;
+
+                    this.time.addEvent({
+                        delay: c_hour_length*1000,
+                        callback: () => {
+                            this.stuFastTimer.paused = true;
+                            this.stuTimer.paused = false;
+                        }
+                    })
+
+                    this.animationCallback = null;
+                }
+            }
+        }
+
+        // handle animation
+        if (this.animationOn) {
+            const elapsed = (Date.now()-this.animationTime)/1000;
+            if (elapsed > this.animationLen) {
+                this.animationOn = false;
+                if (this.animationCallback != null) {
+                    // Please set it to null by yourself
+                    this.animationCallback();
+                }
+            }
+            else if (this.animationWork != null) {
+                this.animationWork(elapsed);
+            }
         }
     }
 
@@ -271,6 +384,29 @@ class GameBody extends Phaser.Scene {
 
     getTimeText() {
         return `${this.nowDay}${this.ordinalWord()} day\n${this.nowTime}:00`;
+    }
+
+    addBannerAnimation(banner) {
+        this.animationOn = true;
+        this.animationTime = Date.now();
+        this.animationLen = c_banner_time;
+
+        banner.x = 0;
+        banner.setVelocity(c_banner_speed,0);
+
+        this.time.addEvent({
+            delay: c_banner_travel_time*1000,
+            callback: () => {
+                banner.setVelocity(0,0);
+
+                this.time.addEvent({
+                    delay: c_banner_stay_time*1000,
+                    callback: () => {
+                        banner.setVelocity(c_banner_speed,0);
+                    }
+                })
+            }
+        })
     }
 };
 
