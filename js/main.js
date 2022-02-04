@@ -72,6 +72,7 @@ class GameBody extends Phaser.Scene {
         this.load.image('st-good', 'assets/student_good1.png');
         this.load.image('st-bad', 'assets/student_bad1.png');
         this.load.image('magic', 'assets/magic.png');
+        this.load.image('classroom', 'assets/classroom.png');
 
         this.load.audio('bgm', 'assets/bgm/Alla-Turca.mp3');
         this.load.audio('meow', 'assets/bgm/meow.mp3');
@@ -97,6 +98,10 @@ class GameBody extends Phaser.Scene {
         this.night.depth = 5; // to have it on the top
         this.night.alpha = 0;
 
+        this.classroom = this.add.image(0,0,'classroom')
+            .setOrigin(0,0);
+        this.classroom.depth = 3;
+
         this.bgm = this.sound.add('bgm', {loop: true});
         this.bgm.play();
 
@@ -104,16 +109,20 @@ class GameBody extends Phaser.Scene {
         this.meow = this.sound.add('meow', {loop: false});
 
         this.player = this.physics.add.sprite(this.x, this.y, 'player').setOrigin(1,0.5);
+        this.player.depth = 4;
         this.player.setDisplaySize(c_player_width, c_player_height);
         this.player.setCollideWorldBounds(true);
         this.player.body.setGravityY(0);
 
         this.banner_10 = this.physics.add.sprite(0, c_height/2, 'banner-10').setOrigin(1,0.5);
         this.banner_10.setDisplaySize(c_banner_width, c_banner_height);
+        this.banner_10.depth = 5;
         this.banner_3 = this.physics.add.sprite(0, c_height/2, 'banner-3').setOrigin(1,0.5);
         this.banner_3.setDisplaySize(c_banner_width, c_banner_height);
+        this.banner_3.depth = 5;
         this.banner_new = this.physics.add.sprite(0, c_height/2, 'banner-new').setOrigin(1,0.5);
         this.banner_new.setDisplaySize(c_banner_width, c_banner_height);
+        this.banner_new.depth = 5;
 
         // The resource group for magic
         this.allMagic = this.physics.add.group();
