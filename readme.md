@@ -2,6 +2,8 @@ A small present!
 
 The web version of *SquidGame in CovidLife*.
 
+[Demo](https://iamwyh.cn/squidgame)
+
 
 ### Run the game
 

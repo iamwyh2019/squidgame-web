@@ -4,17 +4,36 @@ class GameStart extends Phaser.Scene {
     }
 
     preload() {
-        this.load.image('st-header', 'assets/header.png');
-        this.load.image('st-p1', 'assets/player_front1.png');
-        this.load.image('st-p2', 'assets/player_front2.png');
-        this.load.image('st-p3', 'assets/player_front3.png');
-        this.load.image('st-ins', 'assets/start_instr.png');
-        this.load.image('st-s1', 'assets/student_front1.png');
-        this.load.image('st-s2', 'assets/student_front2.png');
-        this.load.image('cat', 'assets/cat.png');
+        this.load.image('st-header', './assets/header.png');
+        this.load.image('st-p1', './assets/player_front1.png');
+        this.load.image('st-p2', './assets/player_front2.png');
+        this.load.image('st-p3', './assets/player_front3.png');
+        this.load.image('st-ins', './assets/start_instr.png');
+        this.load.image('st-s1', './assets/student_front1.png');
+        this.load.image('st-s2', './assets/student_front2.png');
+        this.load.image('cat', './assets/cat.png');
+
+        // load some heavy resources in advance
+        this.load.audio('bgm', './assets/bgm/Alla-Turca.mp3');
+        this.load.audio('meow', './assets/bgm/meow.mp3');
+        this.load.audio('biu', './assets/bgm/biu.mp3');
+        this.load.audio('endbgm', './assets/bgm/start_again.mp3');
+
+        this.load.image('background', './assets/bg1_darken.png');
+        this.load.image('banner-10', './assets/10.png');
+        this.load.image('banner-3', './assets/3.png');
+        this.load.image('banner-new', './assets/newday.png');
+        this.load.image('night', './assets/night.png');
+        this.load.image('endbg1', './assets/endpg1.png');
+        this.load.image('endbg', './assets/endpg.png');
+
+        const textStyle = {font: '32px Arial', fill: BLACK, align: 'center'};
+        this.loadingText = this.add.text(c_width/2, c_height/2, 'Loading...', textStyle);
+        this.loadingText.setOrigin(0.5, 0.5);
     }
 
     create() {
+        this.loadingText.alpha = 0;
         this.add.image(270, 152, 'st-header')
             .setDisplaySize(c_header_width, c_header_height)
             .setOrigin(0,0);
@@ -66,23 +85,12 @@ class GameBody extends Phaser.Scene {
     }
 
     preload() {
-        this.load.image('player', 'assets/player.png');
-        this.load.image('background', 'assets/bg1_darken.png');
-        this.load.image('cat', 'assets/cat.png');
-        this.load.image('st-good', 'assets/student_good1.png');
-        this.load.image('st-bad', 'assets/student_bad1.png');
-        this.load.image('magic', 'assets/magic.png');
-        this.load.image('classroom', 'assets/classroom.png');
+        this.load.image('player', './assets/player.png');
+        this.load.image('st-good', './assets/student_good1.png');
+        this.load.image('st-bad', './assets/student_bad1.png');
+        this.load.image('magic', './assets/magic.png');
+        this.load.image('classroom', './assets/classroom.png');
 
-        this.load.audio('bgm', 'assets/bgm/Alla-Turca.mp3');
-        this.load.audio('meow', 'assets/bgm/meow.mp3');
-        this.load.audio('biu', 'assets/bgm/biu.mp3');
-
-        // banners
-        this.load.image('banner-10', 'assets/10.png');
-        this.load.image('banner-3', 'assets/3.png');
-        this.load.image('banner-new', 'assets/newday.png');
-        this.load.image('night', 'assets/night.png');
     }
 
     create() {
@@ -135,7 +143,7 @@ class GameBody extends Phaser.Scene {
         this.allCat = this.physics.add.group();
 
         // The score text
-        const textStyle = {font: '24px Arial', fill: BLACK, align: 'left'};
+        const textStyle = {font: '24px Arial', fill: BLACK, align: 'center'};
         this.scoreText = this.add.text(5, 5, 'Score: 0', textStyle);
         this.scoreText.setOrigin(0,0);
 
@@ -419,11 +427,42 @@ class GameBody extends Phaser.Scene {
     }
 };
 
-// The base class for end scene
-// Will not load resources, just handle keyboard event
-class GameEndBase extends Phaser.Scene {
-    constructor(scenename) {
-        super({key: scenename});
+class GameEnd_Wrong extends Phaser.Scene {
+    constructor() {
+        super({key: 'GameEnd-Wrong'});
+    }
+
+    preload() {
+    }
+
+    create() {
+        this.add.image(0,0,'endbg1').setOrigin(0,0).setDisplaySize(c_width, c_height);
+        this.bgm = this.sound.add('endbgm', {loop: true});
+        this.bgm.play();
+        this.spaceKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+        this.QKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.Q);
+    }
+
+    update() {
+        if (this.spaceKey.isDown) {
+            this.bgm.stop();
+            this.scene.start('GameStart');
+        }
+        else if (this.QKey.isDown) {
+            if (confirm('Leave the game?')) {
+                window.opener = null;
+                window.close();
+            }
+        }
+    }
+};
+
+class GameEnd_Miss extends Phaser.Scene {
+    constructor() {
+        super({key: 'GameEnd-Miss'});
+    }
+
+    preload() {
     }
 
     create() {
@@ -445,28 +484,6 @@ class GameEndBase extends Phaser.Scene {
                 window.close();
             }
         }
-    }
-};
-
-class GameEnd_Wrong extends GameEndBase {
-    constructor() {
-        super('GameEnd-Wrong');
-    }
-
-    preload() {
-        this.load.image('endbg', 'assets/endpg1.png');
-        this.load.audio('endbgm', 'assets/bgm/start_again.mp3');
-    }
-};
-
-class GameEnd_Miss extends GameEndBase {
-    constructor() {
-        super('GameEnd-Miss');
-    }
-
-    preload() {
-        this.load.image('endbg', 'assets/endpg.png');
-        this.load.audio('endbgm', 'assets/bgm/start_again.mp3');
     }
 };
 
